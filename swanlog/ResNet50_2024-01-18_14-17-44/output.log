@@ -1,0 +1,9 @@
+SwanLab WARNING [2024-01-18 14:17:45,451] An error occurred: 
+SwanLab WARNING [2024-01-18 14:17:45,490] Error getting branch name: fatal: not a git repository (or any parent up to mount point /root)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+
+SwanLab INFO [2024-01-18 14:17:45,512] Experiment ResNet50_2024-01-18_14-17-44 has been registered.
+SwanLab INFO [2024-01-18 14:17:45,513] Run data will be saved locally in /root/onethingai-tmp/tongue_classification/swanlog/ResNet50_2024-01-18_14-17-44
+SwanLab INFO [2024-01-18 14:17:45,513] Experiment_name: ResNet50_2024-01-18_14-17-44
+SwanLab INFO [2024-01-18 14:17:45,513] Run `swanlab watch` to view SwanLab Experiment Dashboard
+SwanLab INFO [2024-01-18 14:59:23,313] The current experiment ResNet50_2024-01-18_14-17-44 has been completed, SwanLab will close it automatically

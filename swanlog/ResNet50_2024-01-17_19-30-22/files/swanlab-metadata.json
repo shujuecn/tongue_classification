@@ -1,0 +1,1 @@
+{"hostname":"instance","os":"Linux-6.1.56-1.2.3-x86_64-with-glibc2.35","python":"3.10.12","executable":"\/root\/miniconda3\/bin\/python","git_remote":null,"cpu":14,"gpu":{"cores":1,"type":["NVIDIA GeForce RTX 3060"]},"git_info":[null,null],"command":"train.py","memory":32.0}

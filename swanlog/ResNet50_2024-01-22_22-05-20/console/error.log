@@ -1,0 +1,40 @@
+2024-01-22 22:05:22.789479
+<class 'torch.cuda.OutOfMemoryError'>
+OutOfMemoryError('CUDA out of memory. Tried to allocate 376.00 MiB (GPU 0; 11.76 GiB total capacity; 10.85 GiB already allocated; 351.25 MiB free; 11.07 GiB reserved in total by PyTorch) If reserved memory is >> allocated memory try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF')
+  File "/root/onethingai-tmp/tongue_classification/train-dev.py", line 142, in <module>
+    train_accu = train(model, device, TrainDataLoader, optimizer, criterion, epoch)
+
+  File "/root/onethingai-tmp/tongue_classification/train-dev.py", line 37, in train
+    outputs = model(inputs)
+
+  File "/root/miniconda3/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+
+  File "/root/miniconda3/lib/python3.10/site-packages/torchvision/models/resnet.py", line 285, in forward
+    return self._forward_impl(x)
+
+  File "/root/miniconda3/lib/python3.10/site-packages/torchvision/models/resnet.py", line 274, in _forward_impl
+    x = self.layer2(x)
+
+  File "/root/miniconda3/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+
+  File "/root/miniconda3/lib/python3.10/site-packages/torch/nn/modules/container.py", line 217, in forward
+    input = module(input)
+
+  File "/root/miniconda3/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+
+  File "/root/miniconda3/lib/python3.10/site-packages/torchvision/models/resnet.py", line 155, in forward
+    out = self.bn3(out)
+
+  File "/root/miniconda3/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+
+  File "/root/miniconda3/lib/python3.10/site-packages/torch/nn/modules/batchnorm.py", line 171, in forward
+    return F.batch_norm(
+
+  File "/root/miniconda3/lib/python3.10/site-packages/torch/nn/functional.py", line 2450, in batch_norm
+    return torch.batch_norm(
+
+
