@@ -269,8 +269,7 @@ def parse_arguments():
         help="Random seeds for spliting datasets (default: 31)",
     )
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 if __name__ == "__main__":

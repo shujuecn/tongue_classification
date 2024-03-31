@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 
+import contextlib
 import os
 import glob
 from shutil import rmtree
@@ -13,6 +14,7 @@ if __name__ == "__main__":
         "./croped_images/split_info",
         "./.vscode",
         "./utils/__pycache__",
+        "./.ipynb_checkpoints",
     ]
 
     ds_store_files = glob.glob("**/.DS_Store", recursive=True)
@@ -30,18 +32,12 @@ if __name__ == "__main__":
     if confirm == "yes":
         # 删除目录
         for file in files_to_delete:
-            try:
+            with contextlib.suppress(FileNotFoundError):
                 rmtree(file)
-            except FileNotFoundError:
-                pass
-
         # 删除 .DS_Store 文件
         for file in ds_store_files:
-            try:
+            with contextlib.suppress(FileNotFoundError):
                 os.remove(file)
-            except FileNotFoundError:
-                pass
-
         print("Files deleted successfully.")
     else:
         print("Deletion aborted.")

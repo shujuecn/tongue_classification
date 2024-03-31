@@ -122,13 +122,12 @@ class ClassificationEvaluator(ModelEval):
         self.recall = sm.recall_score(self.true_label, self.pred_label)
         self.f1 = sm.f1_score(self.true_label, self.pred_label)
 
-        scores = {
+        return {
             "Accuracy": self.accuracy,
             "Precision": self.precision,
             "Recall": self.recall,
             "F1-Score": self.f1,
         }
-        return scores
 
     def training_curve(self):
         """绘制曲线"""
@@ -328,12 +327,11 @@ class GradCAM(ModelEval):
             # Retrieve the CAM by passing the class index and the model output
             activation_map = cam_extractor(out.squeeze(0).argmax().item(), out)
 
-        result = overlay_mask(
+        return overlay_mask(
             to_pil_image(image),
             to_pil_image(activation_map[0].squeeze(0), mode="F"),
             alpha=0.5,
         )
-        return result
 
     def subplot(self, image_dict, nrows=None, ncols=None, title=None):
         """多子图排版"""
