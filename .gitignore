@@ -1,9 +1,13 @@
-datasets/
+original_tongue_dataset/
+croped_images/
 checkpoint/
+runs/
+logs/
+output/
 
 __pycache__/
 .ipynb_checkpoints/
+.vscode/
 
 .DS_Store
-
 
