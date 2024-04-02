@@ -8,9 +8,31 @@ from PIL import Image
 from torchvision.io.image import read_image
 
 
-class TrainDataLoader(Dataset):
-    def __init__(self, train_dataset, train_labels) -> None:
-        self.train_transform = transforms.Compose(
+class EmptyDataLoader(Dataset):
+    def __init__(self, dataset, labels):
+        self.dataset = dataset
+        self.labels = labels
+
+    def get_transform(self):
+        raise NotImplementedError
+
+    def __getitem__(self, index):
+        image = Image.open(self.dataset[index])
+        transform = self.get_transform()
+        image = transform(image)
+        label = self.labels[index]
+        return image, label
+
+    def __len__(self):
+        return len(self.train_dataset)
+
+
+class TrainDataLoader(EmptyDataLoader):
+    def __init__(self, dataset, labels) -> None:
+        super().__init__(dataset, labels)
+
+    def get_transform(self):
+        return transforms.Compose(
             [
                 transforms.Resize(size=(224, 224)),
                 transforms.RandomHorizontalFlip(),
@@ -24,22 +46,14 @@ class TrainDataLoader(Dataset):
                 ),
             ]
         )
-        self.train_dataset = train_dataset
-        self.train_labels = train_labels
-
-    def __getitem__(self, index):
-        image = Image.open(self.train_dataset[index])
-        image = self.train_transform(image)
-        label = self.train_labels[index]
-        return image, label
-
-    def __len__(self):
-        return len(self.train_dataset)
 
 
-class ValDataLoader(Dataset):
-    def __init__(self, val_dataset, val_labels):
-        self.val_transform = transforms.Compose(
+class ValDataLoader(EmptyDataLoader):
+    def __init__(self, dataset, labels) -> None:
+        super().__init__(dataset, labels)
+
+    def get_transform(self):
+        return transforms.Compose(
             [
                 transforms.Resize(size=(224, 224)),
                 transforms.ToTensor(),
@@ -48,43 +62,24 @@ class ValDataLoader(Dataset):
                 ),
             ]
         )
-        self.val_dataset = val_dataset
-        self.val_labels = val_labels
-
-    def __getitem__(self, index):
-        image = Image.open(self.val_dataset[index])
-        image = self.val_transform(image)
-        label = self.val_labels[index]
-        return image, label
-
-    def __len__(self):
-        return len(self.val_dataset)
 
 
-class TestDataLoader(Dataset):
+class TestDataLoader(EmptyDataLoader):
     def __init__(self, file_name: str):
-        self.test_transform = transforms.Compose(
-            [
-                transforms.Resize(size=(224, 224)),
-                transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.225, 0.225, 0.225]
-                ),
-            ]
-        )
         self.test_file_name = f"./croped_images/split_info/{file_name}/test.csv"
         with open(self.test_file_name, "r") as file:
             self.data = list(csv.reader(file))
 
-    def __getitem__(self, index):
-        image_path, label = self.data[index]
-        image = Image.open(image_path)
-        image = self.test_transform(image)
-
-        return image, int(label)
-
-    def __len__(self):
-        return len(self.data)
+    def get_transform(self):
+        return transforms.Compose(
+            [
+                transforms.Resize(size=(224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.225, 0.225, 0.225]
+                ),
+            ]
+        )
 
 
 class GradCAMDataLoader(Dataset):
