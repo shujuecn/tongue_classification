@@ -180,7 +180,7 @@ class TongueClassifier:
             current_lr = self.optimizer.param_groups[0]["lr"]
             self.logger.info(f"Current LR: {current_lr:.8f}")
 
-        model_file_name = f"checkpoint/{model_name}/{self.file_name}.pth"
+        model_file_name = f"checkpoint/{self.model.name}/{self.file_name}.pth"
 
         # 保存权重文件
         torch.save(self.model.state_dict(), model_file_name)
