@@ -12,15 +12,15 @@ class TrainDataLoader(Dataset):
         self.train_transform = transforms.Compose(
             [
                 transforms.Resize(size=(224, 224)),
-                transforms.RandomHorizontalFlip(),
-                transforms.Lambda(
-                    lambda img: img.rotate(random.choice([0, 90, 180, 270]))
-                ),
-                transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5),
-                transforms.ToTensor(),
-                # transforms.Normalize(
-                #     mean=[0.485, 0.456, 0.406], std=[0.225, 0.225, 0.225]
+                # transforms.RandomHorizontalFlip(),
+                # transforms.Lambda(
+                #     lambda img: img.rotate(random.choice([0, 90, 180, 270]))
                 # ),
+                # transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.225, 0.225, 0.225]
+                ),
             ]
         )
         self.train_dataset = train_dataset
@@ -39,7 +39,13 @@ class TrainDataLoader(Dataset):
 class ValDataLoader(Dataset):
     def __init__(self, val_dataset, val_labels):
         self.val_transform = transforms.Compose(
-            [transforms.Resize(size=(224, 224)), transforms.ToTensor()]
+            [
+                transforms.Resize(size=(224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.225, 0.225, 0.225]
+                ),
+            ]
         )
         self.val_dataset = val_dataset
         self.val_labels = val_labels
@@ -57,7 +63,13 @@ class ValDataLoader(Dataset):
 class TestDataLoader(Dataset):
     def __init__(self, file_name: str):
         self.test_transform = transforms.Compose(
-            [transforms.Resize(size=(224, 224)), transforms.ToTensor()]
+            [
+                transforms.Resize(size=(224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.225, 0.225, 0.225]
+                ),
+            ]
         )
         self.test_file_name = f"./croped_images/split_info/{file_name}/test.csv"
         with open(self.test_file_name, "r") as file:
@@ -72,6 +84,15 @@ class TestDataLoader(Dataset):
 
     def __len__(self):
         return len(self.data)
+
+
+class GradCAMDataLoader(TestDataLoader):
+    def __init__(self, file_name: str):
+        super().__init__(file_name)
+        self.test_transform = transforms.Compose(
+            # [transforms.Resize(size=(224, 224)), transforms.ToTensor()]
+            [transforms.ToTensor()]
+        )
 
 
 class DataHandler:
