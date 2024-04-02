@@ -8,10 +8,13 @@ from torchvision import models
 class ResNet18(nn.Module):
     def __init__(self, num_classes=2):
         super(ResNet18, self).__init__()
+
         self.model = models.resnet18(weights=None)
         num_features = self.model.fc.in_features
         self.model.fc = nn.Linear(num_features, num_classes)
+
         self.name = "ResNet18"
+        self.initialize_weights()
 
     def forward(self, x):
         return self.model(x)
@@ -39,6 +42,7 @@ class ResNet50(nn.Module):
         self.model.fc = nn.Linear(num_features, num_classes)
 
         self.name = "ResNet50"
+        self.initialize_weights()
 
     def forward(self, x):
         return self.model(x)
@@ -60,13 +64,13 @@ class ResNet50(nn.Module):
 class VGG16(nn.Module):
     def __init__(self, num_classes=2):
         super(VGG16, self).__init__()
+
         self.model = models.vgg16(weights=None)
         num_features = self.model.classifier[-1].in_features
         self.model.classifier[-1] = nn.Linear(num_features, num_classes)
-        self.initialize_weights()
 
         self.name = "VGG16"
-        # self.target_layer = self.model.features[-1]
+        self.initialize_weights()
 
     def forward(self, x):
         return self.model(x)
@@ -88,13 +92,13 @@ class VGG16(nn.Module):
 class VGG19(nn.Module):
     def __init__(self, num_classes=2):
         super(VGG19, self).__init__()
+
         self.model = models.vgg19(weights=None)
         num_features = self.model.classifier[-1].in_features
         self.model.classifier[-1] = nn.Linear(num_features, num_classes)
-        self.initialize_weights()
 
         self.name = "VGG19"
-        # self.target_layer = self.model.features[-1]
+        self.initialize_weights()
 
     def forward(self, x):
         return self.model(x)
@@ -116,12 +120,12 @@ class VGG19(nn.Module):
 class GoogLeNet(nn.Module):
     def __init__(self, num_classes=2):
         super(GoogLeNet, self).__init__()
+
         self.model = models.googlenet(weights=None)
         self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
-        self.initialize_weights()
 
         self.name = "GoogLeNet"
-        # self.target_layer = self.model.inception5b.branch4
+        self.initialize_weights()
 
     def forward(self, x):
         return self.model(x)
@@ -143,13 +147,13 @@ class GoogLeNet(nn.Module):
 class AlexNet(nn.Module):
     def __init__(self, num_classes=2):
         super(AlexNet, self).__init__()
+
         self.model = models.alexnet(weights=None)
         num_features = self.model.classifier[-1].in_features
         self.model.classifier[-1] = nn.Linear(num_features, num_classes)
-        self.initialize_weights()
 
         self.name = "AlexNet"
-        # self.target_layer = self.model.features[-1]
+        self.initialize_weights()
 
     def forward(self, x):
         return self.model(x)
