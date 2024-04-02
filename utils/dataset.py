@@ -24,7 +24,7 @@ class EmptyDataLoader(Dataset):
         return image, label
 
     def __len__(self):
-        return len(self.train_dataset)
+        return len(self.dataset)
 
 
 class TrainDataLoader(EmptyDataLoader):
