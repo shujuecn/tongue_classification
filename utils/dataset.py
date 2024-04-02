@@ -5,6 +5,7 @@ import csv
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from PIL import Image
+from torchvision.io.image import read_image
 
 
 class TrainDataLoader(Dataset):
@@ -12,11 +13,11 @@ class TrainDataLoader(Dataset):
         self.train_transform = transforms.Compose(
             [
                 transforms.Resize(size=(224, 224)),
-                # transforms.RandomHorizontalFlip(),
-                # transforms.Lambda(
-                #     lambda img: img.rotate(random.choice([0, 90, 180, 270]))
-                # ),
-                # transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5),
+                transforms.RandomHorizontalFlip(),
+                transforms.Lambda(
+                    lambda img: img.rotate(random.choice([0, 90, 180, 270]))
+                ),
+                transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5),
                 transforms.ToTensor(),
                 transforms.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.225, 0.225, 0.225]
@@ -86,13 +87,20 @@ class TestDataLoader(Dataset):
         return len(self.data)
 
 
-class GradCAMDataLoader(TestDataLoader):
+class GradCAMDataLoader(Dataset):
     def __init__(self, file_name: str):
-        super().__init__(file_name)
-        self.test_transform = transforms.Compose(
-            # [transforms.Resize(size=(224, 224)), transforms.ToTensor()]
-            [transforms.ToTensor()]
-        )
+        self.cam_file_name = f"./croped_images/split_info/{file_name}/test.csv"
+        with open(self.cam_file_name, "r") as file:
+            self.data = list(csv.reader(file))
+
+    def __getitem__(self, index):
+        image_path, label = self.data[index]
+        image = read_image(image_path)
+
+        return image, int(label)
+
+    def __len__(self):
+        return len(self.data)
 
 
 class DataHandler:
