@@ -19,8 +19,6 @@ from tqdm import tqdm
 from . import models
 from .dataset import TestDataLoader, GradCAMDataLoader
 
-# from abc import ABC, abstractmethod
-
 
 class ModelEval:
     def __init__(self, file_name) -> None:
@@ -333,9 +331,11 @@ class GradCAM(ModelEval):
     def img_overlay_mask(self, image):
         """生成单张图的 Grad-CAM 图像"""
 
+        input_tensor = image / 1.0
+
         with SmoothGradCAMpp(self.model, self.target_layer) as cam_extractor:
             # Preprocess your data and feed it to the model
-            out = self.model(image.unsqueeze(0))
+            out = self.model(input_tensor.unsqueeze(0))
             # Retrieve the CAM by passing the class index and the model output
             activation_map = cam_extractor(out.squeeze(0).argmax().item(), out)
 
@@ -378,15 +378,20 @@ class GradCAM(ModelEval):
         )
 
     def cam_examples(self):
-
         img_dict = {}
+        labels = [1, 0]
 
-        for i in range(12):
-            image, label = self.cam_dataset_loader[i]
+        for label in labels:
+            indices = [
+                i for i, (_, l) in enumerate(self.cam_dataset_loader) if l == label
+            ]
+            label_name = "stained" if label == 1 else "non-stained"
 
-            title = f"({i+1}) {'stained' if label == 1 else 'non-stained'}"
-            img_dict[title] = image.permute(1, 2, 0).numpy()
-            img_dict[title + " (CAM)"] = self.img_overlay_mask(image)
+            for idx, i in enumerate(indices[:6]):
+                image, _ = self.cam_dataset_loader[i]
+                title = f"({idx+1}) {label_name}"
+                img_dict[title] = image.permute(1, 2, 0).numpy()
+                img_dict[title + " (CAM)"] = self.img_overlay_mask(image)
 
         self.subplot(img_dict, ncols=6)
 
@@ -399,7 +404,7 @@ class GradCAM(ModelEval):
             grad_cam_plot = np.hstack(
                 (
                     image.permute(1, 2, 0).numpy(),
-                    np.array(self.img_overlay_mask(image)) / 255.0,
+                    np.array(self.img_overlay_mask(image)),
                 )
             )
 
