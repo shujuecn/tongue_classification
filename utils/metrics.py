@@ -17,7 +17,9 @@ from torchvision.transforms.functional import to_pil_image
 from tqdm import tqdm
 
 from . import models
-from .dataset import TestDataLoader
+from .dataset import TestDataLoader, GradCAMDataLoader
+
+# from abc import ABC, abstractmethod
 
 
 class ModelEval:
@@ -35,9 +37,6 @@ class ModelEval:
 
         self.checkpoint_path = f"./checkpoint/{self.model_name}/{self.file_name}.pth"
         self.csv_filename = f"./output/train_info/{self.file_name}.csv"
-        self.figure_save_path = f"./output/image/metrics/{self.file_name}"
-
-        os.makedirs(self.figure_save_path, exist_ok=True)
 
     def load_model_weights(self, device=None):
         """加载模型权重，评估模式"""
@@ -53,9 +52,8 @@ class ModelEval:
         model.eval()
         return model
 
-    def load_test_dataloader(self, batch_size):
-        test_dataset_loader = TestDataLoader(self.file_name)
-        return DataLoader(test_dataset_loader, batch_size)
+    def load_dataloader(self, batch_size=None):
+        raise NotImplementedError
 
     @staticmethod
     def get_device():
@@ -88,6 +86,13 @@ class ClassificationEvaluator(ModelEval):
         self.precision = 0
         self.recall = 0
         self.f1 = 0
+
+        self.figure_save_path = f"./output/image/metrics/{self.file_name}"
+        os.makedirs(self.figure_save_path, exist_ok=True)
+
+    def load_test_dataloader(self, batch_size):
+        test_dataset_loader = TestDataLoader(self.file_name)
+        return DataLoader(test_dataset_loader, batch_size)
 
     def predict(self):
         """预测图像类别并返回概率"""
@@ -301,22 +306,29 @@ class GradCAM(ModelEval):
         super().__init__(file_name)
 
         self.model = self.load_model_weights("cpu")
-        self.test_dataset_loader = TestDataLoader(file_name)
+        self.cam_dataset_loader = self.load_dataloader()
 
         self.target_layer = self.get_target_layer()
 
         self.cam_save_path = f"./output/image/gradcam/{self.file_name}"
         os.makedirs(self.cam_save_path, exist_ok=True)
 
+    def load_dataloader(self):
+        return GradCAMDataLoader(self.file_name)
+
     def get_target_layer(self):
+        if isinstance(self.model, models.ResNet18):
+            return self.model.model.layer4[-1]
         if isinstance(self.model, models.ResNet50):
-            return self.model.model.layer4[-1].conv3
+            return self.model.model.layer4[-1]
         elif isinstance(self.model, models.VGG16):
-            return self.model.features[-1]
+            return self.model.model.features[-1]
+        elif isinstance(self.model, models.VGG19):
+            return self.model.model.features[-1]
         elif isinstance(self.model, models.GoogLeNet):
-            return self.model.inception5b
+            return self.model.model.inception5b
         elif isinstance(self.model, models.AlexNet):
-            return self.model.features[-4]
+            return self.model.model.features[-4]
 
     def img_overlay_mask(self, image):
         """生成单张图的 Grad-CAM 图像"""
@@ -358,12 +370,19 @@ class GradCAM(ModelEval):
         if title:
             plt.suptitle(title, y=1.03)
 
+        plt.savefig(
+            os.path.join(self.cam_save_path, "cam_example.pdf"),
+            format="pdf",
+            bbox_inches="tight",
+            pad_inches=0.1,
+        )
+
     def cam_examples(self):
 
         img_dict = {}
 
         for i in range(12):
-            image, label = self.test_dataset_loader[i]
+            image, label = self.cam_dataset_loader[i]
 
             title = f"({i+1}) {'stained' if label == 1 else 'non-stained'}"
             img_dict[title] = image.permute(1, 2, 0).numpy()
@@ -372,10 +391,10 @@ class GradCAM(ModelEval):
         self.subplot(img_dict, ncols=6)
 
     def cam_test_dataset(self):
-        tqdm_iterator = tqdm(range(len(self.test_dataset_loader)), desc="Processing")
+        tqdm_iterator = tqdm(range(len(self.cam_dataset_loader)), desc="Processing")
 
         for i in tqdm_iterator:
-            image, label = self.test_dataset_loader[i]
+            image, label = self.cam_dataset_loader[i]
 
             grad_cam_plot = np.hstack(
                 (
