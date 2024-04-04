@@ -70,6 +70,9 @@ class TestDataLoader(EmptyDataLoader):
         with open(self.test_file_name, "r") as file:
             self.data = list(csv.reader(file))
 
+        self.dataset = [d[0] for d in self.data]
+        self.labels = [int(d[1]) for d in self.data]
+
     def get_transform(self):
         return transforms.Compose(
             [
