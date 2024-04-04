@@ -13,7 +13,8 @@ __pycache__/
 .DS_Store
 
 run.sh
+evaluate.ipynb
 send_email.py
+
 temp.py
 temp.ipynb
-evaluate.ipynb
