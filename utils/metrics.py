@@ -85,6 +85,9 @@ class ClassificationEvaluator(ModelEval):
         self.recall = 0
         self.f1 = 0
 
+        self.auc = 0
+        self.ap = 0
+
         self.figure_save_path = f"./output/image/metrics/{self.file_name}"
         os.makedirs(self.figure_save_path, exist_ok=True)
 
@@ -230,7 +233,8 @@ class ClassificationEvaluator(ModelEval):
         fpr, tpr, thresholds = sm.roc_curve(
             self.true_label, self.positive_probability, pos_label=1
         )
-        print(f"AUC: {sm.auc(fpr, tpr)}")
+        self.auc = sm.auc(fpr, tpr)
+        print(f"AUC: {self.auc}")
 
         fig, ax = plt.subplots(figsize=(5, 4))
         plt.plot(fpr, tpr, linewidth=1)
@@ -258,6 +262,10 @@ class ClassificationEvaluator(ModelEval):
         precision, recall, threshold = sm.precision_recall_curve(
             self.true_label, self.positive_probability, pos_label=1
         )
+        self.ap = sm.average_precision_score(
+            self.true_label, self.positive_probability, pos_label=1
+        )
+        print(f"AP: {self.ap}")
 
         fig, ax = plt.subplots(figsize=(5, 4))
         plt.plot(precision, recall, label="Logistic", linewidth=1)
