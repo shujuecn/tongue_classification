@@ -6,18 +6,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import shap
 import sklearn.metrics as sm
 import torch
 import torch.nn.functional as F
-from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
 from torchcam.methods import SmoothGradCAMpp
 from torchcam.utils import overlay_mask
+from torchvision import transforms
 from torchvision.transforms.functional import to_pil_image
 from tqdm import tqdm
 
 from . import models
-from .dataset import TestDataLoader, GradCAMDataLoader
+from .dataset import GradCAMDataLoader, ShapDataLoader, TestDataLoader
 
 
 class ModelEval:
@@ -71,7 +72,6 @@ class ModelEval:
 
 
 class ClassificationEvaluator(ModelEval):
-
     def __init__(self, file_name) -> None:
         super().__init__(file_name)
 
@@ -287,7 +287,6 @@ class ClassificationEvaluator(ModelEval):
         )
 
     def confusion_matrix(self):
-
         conf_matrix = sm.confusion_matrix(self.true_label, self.pred_label)
 
         plt.figure(figsize=(5, 4))
@@ -409,28 +408,126 @@ class GradCAM(ModelEval):
         for i in tqdm_iterator:
             image, label = self.cam_dataset_loader[i]
 
-            grad_cam_plot = np.hstack(
-                (
-                    image.permute(1, 2, 0).numpy(),
-                    np.array(self.img_overlay_mask(image)),
-                )
-            )
-
             title = f"{i}_{'stained' if label == 1 else 'non-stained'}"
-            self.save_plot(grad_cam_plot, title)
+            output_path = f"{self.cam_save_path}/{title}.png"
+
+            if not os.path.exists(output_path):
+                grad_cam_plot = np.hstack(
+                    (
+                        image.permute(1, 2, 0).numpy(),
+                        np.array(self.img_overlay_mask(image)),
+                    )
+                )
+                self.save_plot(grad_cam_plot, output_path)
+
             tqdm_iterator.set_postfix_str(f"{title}", refresh=False)
 
-    def save_plot(self, image, title):
+    def save_plot(self, image, output_path):
         plt.figure(dpi=300)
         plt.imshow(image)
         plt.axis("off")
         plt.tight_layout()
 
         plt.savefig(
-            f"{self.cam_save_path}/{title}.png",
+            output_path,
             format="png",
             bbox_inches="tight",
             pad_inches=0.1,
         )
 
         plt.close()
+
+
+class Shap(ModelEval):
+    def __init__(self, file_name) -> None:
+        super().__init__(file_name)
+
+        self.model = self.load_model_weights()
+        self.shap_dataset_loader = ShapDataLoader(self.file_name)
+
+        self.shap_save_path = f"./output/image/shap/{self.file_name}"
+        os.makedirs(self.shap_save_path, exist_ok=True)
+
+        self.class_names = ["Non-Stained", "Stained"]
+
+    @staticmethod
+    def nhwc_to_nchw(x: torch.Tensor):
+        if x.dim() == 4:
+            x = x if x.shape[1] == 3 else x.permute(0, 3, 1, 2)
+        elif x.dim() == 3:
+            x = x if x.shape[0] == 3 else x.permute(2, 0, 1)
+        return x
+
+    @staticmethod
+    def nchw_to_nhwc(x: torch.Tensor):
+        if x.dim() == 4:
+            x = x if x.shape[3] == 3 else x.permute(0, 2, 3, 1)
+        elif x.dim() == 3:
+            x = x if x.shape[2] == 3 else x.permute(1, 2, 0)
+        return x
+
+    def transform(self, image):
+        img_transform = transforms.Compose(
+            [
+                transforms.Lambda(self.nhwc_to_nchw),
+                transforms.Resize(size=(224, 224)),
+                # transforms.ToTensor(),
+                transforms.Lambda(lambda x: x * (1 / 255)),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.225, 0.225, 0.225]
+                ),
+                transforms.Lambda(self.nchw_to_nhwc),
+            ]
+        )
+        return img_transform(image)
+
+    def inv_transform(self, image):
+        image_transform = transforms.Compose(
+            [
+                transforms.Lambda(self.nhwc_to_nchw),
+                transforms.Resize((224, 224)),
+                transforms.Lambda(self.nchw_to_nhwc),
+            ]
+        )
+        return image_transform(image)
+
+    def predict(self, image):
+        image = self.nhwc_to_nchw(torch.Tensor(image)).to(
+            self.device
+        )  # [1, 3, 224, 224]
+        return self.model(image)
+
+    def shap(self, image_original, image_trans, batch_size=50, n_evals=15000):
+        masker_blur = shap.maskers.Image(
+            "blur(16, 16)", image_trans[0].shape
+        )  # (1, 150528)
+
+        explainer = shap.Explainer(
+            self.predict, masker_blur, output_names=self.class_names
+        )
+
+        shap_values = explainer(
+            image_trans, max_evals=n_evals, batch_size=batch_size, outputs=[0, 1]
+        )
+
+        shap_values.data = self.inv_transform(image_original).numpy()[0]
+        shap_values.values = [
+            val for val in np.moveaxis(shap_values.values[0], -1, 0)
+        ]  # shap值热力图
+        shap.image_plot(
+            shap_values=shap_values.values,
+            pixel_values=shap_values.data,
+            labels=shap_values.output_names,
+        )
+
+    def one_sample_shap(self):
+        image, label = next(self.shap_dataset_loader)
+        image_original = self.nchw_to_nhwc(image).unsqueeze(0)  # [1, 512, 512, 3]
+        image_trans = self.transform(image_original)  # [1, 224, 224, 3]
+
+        predict_label = torch.max(self.predict(image_trans).data, 1)[1].item()
+
+        print(f"==>> True label: {label}")
+        print(f"==>> Predict label: {predict_label}")
+
+        self.shap(image_original, image_trans)
