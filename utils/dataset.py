@@ -87,8 +87,8 @@ class TestDataLoader(EmptyDataLoader):
 
 class GradCAMDataLoader(Dataset):
     def __init__(self, file_name: str):
-        self.cam_file_name = f"./croped_images/split_info/{file_name}/test.csv"
-        with open(self.cam_file_name, "r") as file:
+        self.file_path = f"./croped_images/split_info/{file_name}/test.csv"
+        with open(self.file_path, "r") as file:
             self.data = list(csv.reader(file))
 
     def __getitem__(self, index):
@@ -99,6 +99,24 @@ class GradCAMDataLoader(Dataset):
 
     def __len__(self):
         return len(self.data)
+
+
+class ShapDataLoader(GradCAMDataLoader):
+    def __init__(self, file_name: str):
+        super().__init__(file_name)
+        self.index = 0
+
+    def __iter__(self):
+        self.index = 0
+        return self
+
+    def __next__(self):
+        if self.index < len(self):
+            image, label = self[self.index]
+            self.index += 1
+            return image, label
+        else:
+            raise StopIteration()
 
 
 class DataHandler:
