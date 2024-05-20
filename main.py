@@ -16,7 +16,8 @@ def parse_arguments():
     parser.add_argument(
         "--model",
         type=str,
-        required=True,
+        # required=True,
+        default="resnet50",
         help="Name of the model to train (e.g., 'resnet50', 'vgg16')",
     )
 
@@ -68,8 +69,22 @@ if __name__ == "__main__":
     learning_rate = args.learning_rate
     random_seed = args.random_seed
 
+    data_path = "croped_images"
+    train_size = 1406
+    val_size = 402
+    test_size = 200
+
     cls = TongueClassifier(
-        model_name, data_dir, batch_size, num_epochs, learning_rate, random_seed
+        model_name,
+        data_dir,
+        batch_size,
+        num_epochs,
+        learning_rate,
+        random_seed,
+        data_path,
+        train_size,
+        val_size,
+        test_size,
     )
 
     print(f"Training {model_name} model with the following configuration:")

@@ -120,14 +120,25 @@ class ShapDataLoader(GradCAMDataLoader):
 
 
 class DataHandler:
-    def __init__(self, data_dir, batch_size, file_name, seed):
+    def __init__(
+        self,
+        data_dir,
+        batch_size,
+        file_name,
+        seed,
+        data_path,
+        train_size,
+        val_size,
+        test_size,
+    ):
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.file_name = file_name
 
-        self.train_size = 1406
-        self.val_size = 402
-        self.test_size = 200
+        self.data_path = data_path
+        self.train_size = train_size
+        self.val_size = val_size
+        self.test_size = test_size
 
         self.seed = seed
         self.random_split(self.seed)
@@ -135,7 +146,8 @@ class DataHandler:
 
     def random_split(self, seed):
         """随机拆分数据"""
-        data_list = glob.glob("**/*.jpg", recursive=True)
+        # 修复读取非训练图片错误
+        data_list = glob.glob(f"{self.data_path}/**/*.jpg", recursive=True)
         random.seed(seed)
         random.shuffle(data_list)
 
