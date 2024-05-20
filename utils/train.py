@@ -20,6 +20,10 @@ class TongueClassifier:
         num_epochs: int,
         learning_rate: float,
         random_seed: int,
+        data_path: str,
+        train_size: int,
+        val_size: int,
+        test_size: int,
     ):
         self.model = get_model(model_name)
         self.device = self.get_device()
@@ -29,6 +33,11 @@ class TongueClassifier:
         self.num_epochs = num_epochs
         self.lr = learning_rate
         self.seed = random_seed
+
+        self.data_path = data_path
+        self.train_size = train_size
+        self.val_size = val_size
+        self.test_size = test_size
 
         self.criterion = torch.nn.CrossEntropyLoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
@@ -48,7 +57,6 @@ class TongueClassifier:
         return datetime.now().strftime("%m%d%H%M")
 
     def setup_experiment(self, start_time):
-
         os.makedirs("output/train_info", exist_ok=True)
         os.makedirs("logs", exist_ok=True)
         os.makedirs(f"checkpoint/{self.model.name}", exist_ok=True)
@@ -153,7 +161,14 @@ class TongueClassifier:
     def run(self):
         # 加载数据集
         data_handler = DataHandler(
-            self.data_dir, self.batch_size, self.file_name, self.seed
+            self.data_dir,
+            self.batch_size,
+            self.file_name,
+            self.seed,
+            self.data_path,
+            self.train_size,
+            self.val_size,
+            self.test_size,
         )
         self.train_dataloader, self.val_dataloader = data_handler.get_data_loaders()
 
