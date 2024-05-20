@@ -16,6 +16,7 @@ from torchcam.utils import overlay_mask
 from torchvision import transforms
 from torchvision.transforms.functional import to_pil_image
 from tqdm import tqdm
+from IPython.display import clear_output
 
 from . import models
 from .dataset import GradCAMDataLoader, ShapDataLoader, TestDataLoader
@@ -222,6 +223,8 @@ class ClassificationEvaluator(ModelEval):
             linespacing=1.6,
         )
 
+        plt.show()
+
         plt.savefig(
             os.path.join(self.figure_save_path, "training_curve.pdf"),
             format="pdf",
@@ -251,6 +254,8 @@ class ClassificationEvaluator(ModelEval):
         ax.set_xticks([i * 0.1 for i in range(11)])
         ax.set_yticks([i * 0.1 for i in range(11)])
 
+        plt.show()
+
         plt.savefig(
             os.path.join(self.figure_save_path, "roc_curve.pdf"),
             format="pdf",
@@ -279,6 +284,8 @@ class ClassificationEvaluator(ModelEval):
         # ax.set_xticks([i * 0.1 for i in range(11)])
         ax.set_yticks([i * 0.1 for i in range(11)])
 
+        plt.show()
+
         plt.savefig(
             os.path.join(self.figure_save_path, "pr_curve.pdf"),
             format="pdf",
@@ -290,13 +297,21 @@ class ClassificationEvaluator(ModelEval):
         conf_matrix = sm.confusion_matrix(self.true_label, self.pred_label)
 
         plt.figure(figsize=(5, 4))
+        sns.set_theme(font_scale=1.3)
 
-        # vmin, vmax = 0, 100
         ax = sns.heatmap(
             conf_matrix, annot=True, fmt="g", cmap="Blues", vmin=0, vmax=100
         )
         ax.set_xlabel("Predicted Label")
         ax.set_ylabel("True Label")
+
+        # use matplotlib.colorbar.Colorbar object
+        # cbar = ax.collections[0].colorbar
+        # here set the labelsize by 20
+        # cbar.ax.tick_params(labelsize=15)
+
+        plt.show()
+        sns.reset_defaults()
 
         plt.savefig(
             os.path.join(self.figure_save_path, "confusion_matrix.pdf"),
@@ -497,7 +512,9 @@ class Shap(ModelEval):
         )  # [1, 3, 224, 224]
         return self.model(image)
 
-    def shap(self, image_original, image_trans, batch_size=50, n_evals=15000):
+    def shap(
+        self, image_original, image_trans, save=True, batch_size=50, n_evals=15000
+    ):
         masker_blur = shap.maskers.Image(
             "blur(16, 16)", image_trans[0].shape
         )  # (1, 150528)
@@ -514,14 +531,23 @@ class Shap(ModelEval):
         shap_values.values = [
             val for val in np.moveaxis(shap_values.values[0], -1, 0)
         ]  # shap值热力图
+
+        show = False if save is True else True
+
         shap.image_plot(
             shap_values=shap_values.values,
             pixel_values=shap_values.data,
             labels=shap_values.output_names,
+            show=show,  # TODO: 辅助保存可视化结果
         )
 
-    def one_sample_shap(self):
-        image, label = next(self.shap_dataset_loader)
+    def one_sample_shap(self, save=False, image=None, label=None):
+        """
+        image: 传入Tensor，若未指定，则从测试集中抽取
+        """
+        if image is None or label is None:
+            image, label = next(self.shap_dataset_loader)
+
         image_original = self.nchw_to_nhwc(image).unsqueeze(0)  # [1, 512, 512, 3]
         image_trans = self.transform(image_original)  # [1, 224, 224, 3]
 
@@ -530,4 +556,20 @@ class Shap(ModelEval):
         print(f"==>> True label: {label}")
         print(f"==>> Predict label: {predict_label}")
 
-        self.shap(image_original, image_trans)
+        plt.figure(dpi=300)
+        self.shap(image_original, image_trans, save)
+
+    def shap_test_dataset(self):
+        for i, (image, label) in enumerate(self.shap_dataset_loader):
+            image_original = self.nchw_to_nhwc(image).unsqueeze(0)  # [1, 512, 512, 3]
+            image_trans = self.transform(image_original)  # [1, 224, 224, 3]
+
+            predict_label = torch.max(self.predict(image_trans).data, 1)[1].item()
+            output_path = f"{self.shap_save_path}/{i+1}_{label}_{predict_label}.png"
+
+            if not os.path.exists(output_path):
+                self.shap(image_original, image_trans)
+                plt.savefig(output_path)
+                plt.close()
+
+            clear_output(wait=True)
